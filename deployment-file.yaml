@@ -1,5 +1,3 @@
-template-file-location: ./template.yaml
+template-file-path: template.yaml
 parameters: {}
-tags:
-  Environment: Lab
-  Project: IAM-Automation-Lab
+tags: {}
