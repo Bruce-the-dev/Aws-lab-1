@@ -1,6 +1,5 @@
-template-file-location: template.yaml
+template-file-location: ./template.yaml
+parameters: {}
 tags:
-  - key: Environment
-    value: Lab
-  - key: Project
-    value: IAM-Automation-Lab
+  Environment: Lab
+  Project: IAM-Automation-Lab
