@@ -54,6 +54,8 @@ Resources:
       LoginProfile:
         Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
         PasswordResetRequired: true
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
   EC2User1:
     Type: AWS::IAM::User
     DependsOn: TempUserPassword
@@ -64,6 +66,8 @@ Resources:
       LoginProfile:
         Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
         PasswordResetRequired: true
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
       Policies:
         - PolicyName: DenyEC2RunInstances
           PolicyDocument:
@@ -83,6 +87,8 @@ Resources:
       LoginProfile:
         Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
         PasswordResetRequired: true
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
 Outputs:
   SecretManagerARN:
     Description: ARN of the Secrets Manager secret containing temp password
