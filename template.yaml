@@ -46,21 +46,23 @@ Resources:
                 Resource: '*'
   S3User:
     Type: AWS::IAM::User
+    DependsOn: TempUserPassword
     Properties:
       UserName: s3-user
       Groups:
         - !Ref S3UserGroup
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
+        Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
         PasswordResetRequired: true
   EC2User1:
     Type: AWS::IAM::User
+    DependsOn: TempUserPassword
     Properties:
       UserName: ec2-user1
       Groups:
         - !Ref EC2UserGroup
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
+        Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
         PasswordResetRequired: true
       Policies:
         - PolicyName: DenyEC2RunInstances
@@ -73,12 +75,13 @@ Resources:
                 Resource: '*'
   EC2User2:
     Type: AWS::IAM::User
+    DependsOn: TempUserPassword
     Properties:
       UserName: ec2-user2
       Groups:
         - !Ref EC2UserGroup
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
+        Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
         PasswordResetRequired: true
 Outputs:
   SecretManagerARN:
