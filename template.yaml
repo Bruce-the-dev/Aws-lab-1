@@ -82,7 +82,7 @@ Resources:
       ManagedPolicyArns:
       # Allows user to change their own password
         - arn:aws:iam::aws:policy/IAMUserChangePassword
-  S3User-2:
+  S3User2:
     Type: AWS::IAM::User
     DependsOn: TempUserPassword
     Properties:
