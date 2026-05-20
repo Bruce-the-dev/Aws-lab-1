@@ -1,13 +1,18 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: IAM Automation Lab - Creates IAM Users, Groups, and Policies
+# Resources section contains all AWS resources to be created
 Resources:
+# Create a Secrets Manager secret to store the temporary password for IAM lab users
   TempUserPassword:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: IAMLab/TempUserPassword
       Description: Temporary password for IAM lab users
+           # Automatically generates a random password and stores it in the secret
       GenerateSecretString:
+          # Static JSON template stored in secret with a placeholder for the generated password
         SecretStringTemplate: '{"username": "temp-user"}'
+         # Key name where generated password will be stored
         GenerateStringKey: password
         PasswordLength: 16
         ExcludeCharacters: '"@/\'
@@ -15,53 +20,90 @@ Resources:
     Type: AWS::IAM::Group
     Properties:
       GroupName: S3-User-Group
-      Policies:
-        - PolicyName: S3ListBucketsPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:ListAllMyBuckets
-                  - s3:GetBucketLocation
-                Resource: '*'
+  S3ListBucketsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: S3ListBucketsPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+         # List of permissions statements
+        Statement:
+        # Allow access statement
+          - Effect: Allow
+            Action:
+              - s3:ListAllMyBuckets
+              - s3:GetBucketLocation
+                # Applies to all resources in the account
+            Resource: '*'
+      Groups:
+        - !Ref S3UserGroup
   EC2UserGroup:
     Type: AWS::IAM::Group
     Properties:
       GroupName: EC2-User-Group
-      Policies:
-        - PolicyName: EC2GroupPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ec2:DescribeInstances
-                  - ec2:DescribeImages
-                  - ec2:DescribeKeyPairs
-                  - ec2:DescribeSecurityGroups
-                  - ec2:DescribeSubnets
-                  - ec2:DescribeVpcs
-                  - ec2:RunInstances
-                  - ec2:CreateSecurityGroup
-                  - ec2:CreateTags
-                  - ec2:AuthorizeSecurityGroupIngress
-                  - ec2:AuthorizeSecurityGroupEgress
-                Resource: '*'
+  EC2GroupPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: EC2GroupPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:DescribeInstances
+              - ec2:DescribeImages
+              - ec2:DescribeKeyPairs
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeVpcs
+              - ec2:RunInstances
+              - ec2:CreateSecurityGroup
+              - ec2:CreateTags
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:AuthorizeSecurityGroupEgress
+            Resource: '*'
+      Groups:
+        - !Ref EC2UserGroup
   S3User:
     Type: AWS::IAM::User
     DependsOn: TempUserPassword
     Properties:
       UserName: s3-user
+      # Assigns user to S3 group
       Groups:
         - !Ref S3UserGroup
+           # Creates console login access with password stored in Secrets Manager
       LoginProfile:
+      # Retrieves password dynamically from Secrets Manager
         Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
+           # Forces user to change password at first login
         PasswordResetRequired: true
+         # AWS managed policies attached to user
       ManagedPolicyArns:
+      # Allows user to change their own password
         - arn:aws:iam::aws:policy/IAMUserChangePassword
+  S3User-2:
+    Type: AWS::IAM::User
+    DependsOn: TempUserPassword
+    Properties:
+      UserName: s3-user-2
+      # Assigns user to S3 group
+      Groups:
+        - !Ref S3UserGroup
+           # Creates console login access with password stored in Secrets Manager
+      LoginProfile:
+      # Retrieves password dynamically from Secrets Manager
+        Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
+           # Forces user to change password at first login
+        PasswordResetRequired: true
+         # AWS managed policies attached to user
+      ManagedPolicyArns:
+      # Allows user to change their own password
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
+
   EC2User1:
     Type: AWS::IAM::User
+       # Ensures password secret exists first
     DependsOn: TempUserPassword
     Properties:
       UserName: ec2-user1
@@ -72,15 +114,28 @@ Resources:
         PasswordResetRequired: true
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/IAMUserChangePassword
-      Policies:
-        - PolicyName: DenyEC2RunInstances
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Deny
-                Action:
-                  - ec2:RunInstances
-                Resource: '*'
+
+  DenyEC2RunInstancesPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DenyEC2RunInstances
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+         # Explicit deny statement to prevent EC2 user from launching instances
+          - Effect: Deny
+            Action:
+             # Denied action
+              - ec2:RunInstances
+            Resource: '*'
+      Users:
+        - !Ref EC2User1
+  SecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref TempUserPassword
+      RotationRules:
+        AutomaticallyAfterDays: 30
   EC2User2:
     Type: AWS::IAM::User
     DependsOn: TempUserPassword
@@ -89,17 +144,24 @@ Resources:
       Groups:
         - !Ref EC2UserGroup
       LoginProfile:
+       # Password pulled from Secrets Manager
         Password: '{{resolve:secretsmanager:IAMLab/TempUserPassword:SecretString:password}}'
         PasswordResetRequired: true
       ManagedPolicyArns:
+        # Allows password self-management
         - arn:aws:iam::aws:policy/IAMUserChangePassword
+# Outputs section displays useful values after stack deployment
 Outputs:
+ # Outputs ARN/name of secret
   SecretManagerARN:
     Description: ARN of the Secrets Manager secret containing temp password
+     # Returns reference to created secret
     Value: !Ref TempUserPassword
+  # Outputs S3 group name
   S3UserGroupName:
     Description: Name of the S3 User Group
     Value: !Ref S3UserGroup
+  # Outputs EC2 group name
   EC2UserGroupName:
     Description: Name of the EC2 User Group
     Value: !Ref EC2UserGroup
