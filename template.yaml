@@ -82,7 +82,7 @@ Resources:
       ManagedPolicyArns:
       # Allows user to change their own password
         - arn:aws:iam::aws:policy/IAMUserChangePassword
-  S3User-2:
+  S3User2:
     Type: AWS::IAM::User
     DependsOn: TempUserPassword
     Properties:
@@ -130,12 +130,12 @@ Resources:
             Resource: '*'
       Users:
         - !Ref EC2User1
-  SecretRotationSchedule:
-    Type: AWS::SecretsManager::RotationSchedule
-    Properties:
-      SecretId: !Ref TempUserPassword
-      RotationRules:
-        AutomaticallyAfterDays: 30
+  # SecretRotationSchedule:
+  #   Type: AWS::SecretsManager::RotationSchedule
+  #   Properties:
+  #     SecretId: !Ref TempUserPassword
+  #     RotationRules:
+  #       AutomaticallyAfterDays: 30
   EC2User2:
     Type: AWS::IAM::User
     DependsOn: TempUserPassword
